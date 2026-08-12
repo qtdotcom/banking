@@ -1,0 +1,115 @@
+# Phase 8 monitoring overlay — extends the monitoring stack for api-producer + RabbitMQ.
+# Kept inside Phase 8 so Phase 3 remains self-contained.
+
+namespaceOverride: monitoring
+
+prometheus:
+  prometheusSpec:
+    enableRemoteWriteReceiver: true
+    additionalScrapeConfigs:
+      - job_name: auth-service
+        metrics_path: /metrics
+        static_configs:
+          - targets: ['auth-service.banking.svc.cluster.local:8001']
+        relabel_configs:
+          - source_labels: [__address__]
+            target_label: instance
+            replacement: auth-service
+      - job_name: account-service
+        metrics_path: /metrics
+        static_configs:
+          - targets: ['account-service.banking.svc.cluster.local:8002']
+        relabel_configs:
+          - source_labels: [__address__]
+            target_label: instance
+            replacement: account-service
+      - job_name: transfer-service
+        metrics_path: /metrics
+        static_configs:
+          - targets: ['transfer-service.banking.svc.cluster.local:8003']
+        relabel_configs:
+          - source_labels: [__address__]
+            target_label: instance
+            replacement: transfer-service
+      - job_name: notification-service
+        metrics_path: /metrics
+        static_configs:
+          - targets: ['notification-service.banking.svc.cluster.local:8004']
+        relabel_configs:
+          - source_labels: [__address__]
+            target_label: instance
+            replacement: notification-service
+      - job_name: api-producer
+        metrics_path: /metrics
+        static_configs:
+          - targets: ['api-producer.banking.svc.cluster.local:8080']
+        relabel_configs:
+          - source_labels: [__address__]
+            target_label: instance
+            replacement: api-producer
+      - job_name: kong
+        metrics_path: /metrics
+        static_configs:
+          - targets: ['kong-kong-admin.kong.svc.cluster.local:8001']
+        relabel_configs:
+          - source_labels: [__address__]
+            target_label: instance
+            replacement: kong
+      - job_name: redis
+        metrics_path: /metrics
+        static_configs:
+          - targets: ['redis-metrics.redis.svc.cluster.local:9121']
+        relabel_configs:
+          - source_labels: [__address__]
+            target_label: instance
+            replacement: redis
+      - job_name: postgres
+        metrics_path: /metrics
+        static_configs:
+          - targets: ['postgres-postgresql-primary-metrics.postgres.svc.cluster.local:9187']
+        relabel_configs:
+          - source_labels: [__address__]
+            target_label: instance
+            replacement: postgres
+      - job_name: postgres-replica
+        metrics_path: /metrics
+        static_configs:
+          - targets: ['postgres-postgresql-read-metrics.postgres.svc.cluster.local:9187']
+        relabel_configs:
+          - source_labels: [__address__]
+            target_label: instance
+            replacement: postgres-replica
+      - job_name: rabbitmq
+        metrics_path: /metrics
+        static_configs:
+          - targets: ['rabbitmq.rabbit.svc.cluster.local:9419']
+        relabel_configs:
+          - source_labels: [__address__]
+            target_label: instance
+            replacement: rabbitmq
+
+grafana:
+  adminPassword: admin
+  persistence:
+    enabled: true
+    type: pvc
+    storageClassName: "monitoring-nfs"
+    accessModes:
+      - ReadWriteOnce
+    size: 10Gi
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      url: http://loki.monitoring.svc.cluster.local:3100
+      access: proxy
+      isDefault: false
+    - name: Tempo
+      type: tempo
+      url: http://tempo.monitoring.svc.cluster.local:3200
+      access: proxy
+      isDefault: false
+  ingress:
+    enabled: true
+    ingressClassName: haproxy
+    hosts:
+      - grafana.npd-banking.co
