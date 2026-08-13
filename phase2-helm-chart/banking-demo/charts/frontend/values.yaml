@@ -7,7 +7,7 @@ frontend:
     tag: 2d4c7af
     pullPolicy: IfNotPresent
   imagePullSecrets: []
-  replicas: 1
+  replicas: 2
   service:
     port: 80
     portName: http
